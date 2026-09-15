@@ -1,29 +1,21 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text, ForeignKey
+from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
 
-class Lead(Base):
-    __tablename__ = "leads"
+class Business(Base):
+    __tablename__ = "businesses"
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
         autoincrement=True,
     )
-    business_id: Mapped[int] = mapped_column(
-        ForeignKey("businesses.id"),
-    )
 
     name: Mapped[str] = mapped_column(
-        String(100),
-    )
-
-    phone: Mapped[str | None] = mapped_column(
-        String(30),
-        nullable=True,
+        String(150),
     )
 
     email: Mapped[str | None] = mapped_column(
@@ -31,13 +23,8 @@ class Lead(Base):
         nullable=True,
     )
 
-    status: Mapped[str] = mapped_column(
+    phone: Mapped[str | None] = mapped_column(
         String(30),
-        default="new",
-    )
-
-    notes: Mapped[str | None] = mapped_column(
-        Text,
         nullable=True,
     )
 

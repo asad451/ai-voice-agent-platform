@@ -3,7 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Lead
+from app.models import Lead, Business
+from app.schema.business import BusinessCreate
 from app.schema.lead import LeadCreate
 
 app = FastAPI(
@@ -45,6 +46,7 @@ async def create_lead(
     db: AsyncSession = Depends(get_db),
 ):
     lead = Lead(
+        business_id=lead_data.business_id,
         name=lead_data.name,
         phone=lead_data.phone,
         email=lead_data.email,
@@ -57,3 +59,21 @@ async def create_lead(
     await db.refresh(lead)
 
     return lead
+
+@app.post("/businesses")
+async def create_business(
+    business_data: BusinessCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    business = Business(
+        name=business_data.name,
+        email=business_data.email,
+        phone=business_data.phone,
+    )
+
+    db.add(business)
+
+    await db.commit()
+    await db.refresh(business)
+
+    return business
