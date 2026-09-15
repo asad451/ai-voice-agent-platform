@@ -1,4 +1,10 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.models import Lead
+from app.schema.lead import LeadCreate
 
 app = FastAPI(
     title="AI Voice Agent Platform",
@@ -20,3 +26,34 @@ async def health():
     return {
         "status": "healthy",
     }
+
+@app.get("/leads")
+async def get_leads(
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Lead)
+    )
+
+    leads = result.scalars().all()
+
+    return leads
+
+@app.post("/leads")
+async def create_lead(
+    lead_data: LeadCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    lead = Lead(
+        name=lead_data.name,
+        phone=lead_data.phone,
+        email=lead_data.email,
+        notes=lead_data.notes,
+    )
+
+    db.add(lead)
+
+    await db.commit()
+    await db.refresh(lead)
+
+    return lead
