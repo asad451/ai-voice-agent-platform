@@ -3,7 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Lead, Business
+from app.models import Lead, Business, Agent
+from app.schema.agent import AgentCreate
 from app.schema.business import BusinessCreate
 from app.schema.lead import LeadCreate
 
@@ -77,3 +78,35 @@ async def create_business(
     await db.refresh(business)
 
     return business
+
+@app.post("/agents")
+async def create_agent(
+    agent_data: AgentCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    agent = Agent(
+        business_id=agent_data.business_id,
+        name=agent_data.name,
+        system_prompt=agent_data.system_prompt,
+        greeting=agent_data.greeting,
+        voice=agent_data.voice,
+    )
+
+    db.add(agent)
+
+    await db.commit()
+    await db.refresh(agent)
+
+    return agent
+
+@app.get("/agents")
+async def get_agents(
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Agent)
+    )
+
+    agents = result.scalars().all()
+
+    return agents
