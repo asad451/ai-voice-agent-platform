@@ -1,3 +1,5 @@
+from app.models import Message, Conversation
+
 from fastapi import Depends, FastAPI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +8,7 @@ from app.database import get_db
 from app.models import Lead, Business, Agent
 from app.schema.agent import AgentCreate
 from app.schema.business import BusinessCreate
+from app.schema.conversation import ConversationCreate, MessageCreate
 from app.schema.lead import LeadCreate
 
 app = FastAPI(
@@ -110,3 +113,65 @@ async def get_agents(
     agents = result.scalars().all()
 
     return agents
+
+@app.post("/conversations")
+async def create_conversation(
+    conversation_data: ConversationCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    conversation = Conversation(
+        business_id=conversation_data.business_id,
+        lead_id=conversation_data.lead_id,
+        agent_id=conversation_data.agent_id,
+        channel=conversation_data.channel,
+    )
+
+    db.add(conversation)
+    await db.commit()
+    await db.refresh(conversation)
+
+    return conversation
+
+
+@app.get("/conversations")
+async def get_conversations(
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Conversation))
+    conversations = result.scalars().all()
+
+    return conversations
+
+@app.post("/conversations/{conversation_id}/messages")
+async def create_message(
+    conversation_id: int,
+    message_data: MessageCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    message = Message(
+        conversation_id=conversation_id,
+        role=message_data.role,
+        content=message_data.content,
+    )
+
+    db.add(message)
+    await db.commit()
+    await db.refresh(message)
+
+    return message
+
+
+@app.get("/conversations/{conversation_id}/messages")
+async def get_messages(
+    conversation_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Message)
+        .where(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at)
+    )
+
+    messages = result.scalars().all()
+
+    return messages
